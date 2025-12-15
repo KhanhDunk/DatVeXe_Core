@@ -1,0 +1,63 @@
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using System.Security.Claims;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------------------------
+// Add Services
+// -----------------------------------------
+
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
+
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+// Use default Swagger generation (avoid direct references to Microsoft.OpenApi.Models types)
+builder.Services.AddSwaggerGen();
+
+// Simple header-based authentication
+builder.Services.AddAuthentication("HeaderAuth")
+    .AddScheme<AuthenticationSchemeOptions, Auth.HeaderAuthenticationHandler>(
+        "HeaderAuth", options => { });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
+var app = builder.Build();
+
+// -----------------------------------------
+// Middleware
+// -----------------------------------------
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();        // 🔥 QUAN TRỌNG – phải bật dòng này
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

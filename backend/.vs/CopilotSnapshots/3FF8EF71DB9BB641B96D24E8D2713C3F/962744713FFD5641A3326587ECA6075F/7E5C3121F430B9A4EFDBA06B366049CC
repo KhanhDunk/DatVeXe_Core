@@ -1,0 +1,50 @@
+﻿using Microsoft.AspNetCore.Builder;
+//using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Mvc;
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------------------------
+// Add Services
+// -----------------------------------------
+
+// Swagger (OpenAPI)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// CORS cho Angular / React / Mobile App
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
+// Controller API
+//builder.Services.AddControllers()
+//    .AddJsonOptions(o =>
+//    {
+//        o.JsonSerializerOptions.PropertyNamingPolicy = null; // giữ PascalCase
+//    });
+
+var app = builder.Build();
+
+// -----------------------------------------
+// Middleware
+// -----------------------------------------
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+app.MapControllers();
+
+app.Run();

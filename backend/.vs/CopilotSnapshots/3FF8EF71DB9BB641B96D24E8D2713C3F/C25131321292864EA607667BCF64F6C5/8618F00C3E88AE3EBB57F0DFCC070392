@@ -1,0 +1,97 @@
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
+using System.Security.Claims;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------------------------
+// Add Services
+// -----------------------------------------
+
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
+
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "DongHang API",
+        Version = "v1",
+        Description = "API cho hệ thống Đóng Hàng & Ghi Video"
+    });
+
+    // Thêm cơ chế Authentication bằng HEADER
+    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Description = "Dùng header: X-Username",
+        Name = "X-Username",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "HeaderAuth"
+    });
+
+    // Bắt buộc tất cả API phải dùng Auth
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// Simple header-based authentication
+builder.Services.AddAuthentication("HeaderAuth")
+    .AddScheme<AuthenticationSchemeOptions, Auth.HeaderAuthenticationHandler>(
+        "HeaderAuth", options => { });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
+var app = builder.Build();
+
+// -----------------------------------------
+// Middleware
+// -----------------------------------------
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();        // 🔥 QUAN TRỌNG – phải bật dòng này
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

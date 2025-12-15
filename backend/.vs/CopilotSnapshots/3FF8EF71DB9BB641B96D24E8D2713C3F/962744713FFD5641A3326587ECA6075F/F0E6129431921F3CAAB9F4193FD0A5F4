@@ -1,0 +1,64 @@
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection;
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------------------------
+// Add Services
+// -----------------------------------------
+
+// Swagger (OpenAPI)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Simple header-based authentication (see Auth/HeaderAuthenticationHandler)
+builder.Services.AddAuthentication("HeaderAuth")
+    .AddScheme<AuthenticationSchemeOptions, Auth.HeaderAuthenticationHandler>("HeaderAuth", options => { });
+
+// Authorization: admin-only policy
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+});
+
+// CORS cho Angular / React / Mobile App
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
+// Controller API
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = null; // giữ PascalCase
+    });
+
+var app = builder.Build();
+
+// -----------------------------------------
+// Middleware
+// -----------------------------------------
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
