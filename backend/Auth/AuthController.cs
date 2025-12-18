@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Models.DTO;
 using Models.Models;
@@ -22,12 +24,16 @@ namespace backend.Auth
         private readonly JwtService _jwtService;
         private IUserService _userService;
         private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly IEmailSender _emailSender;
+        private readonly BookingSystemContext _context;
 
-        public AuthController(JwtService jwtService, IUserService userService, IPasswordHasher<User> passwordHasher)
+        public AuthController(JwtService jwtService, IUserService userService, IPasswordHasher<User> passwordHasher, BookingSystemContext context, IEmailSender emailSender)
         {
             _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
+            _context = context;
+            _emailSender = emailSender;
         }
 
         [HttpPost("login")]
@@ -130,6 +136,71 @@ namespace backend.Auth
             });
         }
 
+        // 1️⃣ Quên mật khẩu: gửi OTP
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null) return BadRequest("Email không tồn tại");
+
+            var otp = Helper.GenerateOtp();
+            var otpHash = Helper.HashOtp(otp);
+
+            _context.OtpTokens.Add(new OtpToken
+            {
+                Email = user.Email,
+                UserId = user.UserId,
+                OtpCodeHash = otpHash,
+                OtpType = "reset_password",
+                ExpiresAt = DateTime.Now.AddMinutes(5)
+            });
+
+            await _context.SaveChangesAsync();
+
+            await _emailSender.SendEmailAsync(user.Email, "Mã OTP Reset Password", $"Mã OTP của bạn là: {otp}");
+
+            return Ok("Đã gửi mã OTP về email");
+        }
+
+        // 2️⃣ Reset Password bằng OTP
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var otp = await _context.OtpTokens
+                .Where(x =>
+                    x.Email == request.Email &&
+                    x.OtpType == "reset_password" &&
+                    x.IsUsed != true &&
+                    x.ExpiresAt > DateTime.Now)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (otp == null)
+                return BadRequest("OTP không hợp lệ hoặc đã hết hạn");
+
+            if (otp.AttemptCount >= otp.MaxAttempt)
+                return BadRequest("OTP đã bị khóa");
+
+            if (!Helper.VerifyOtp(request.Otp, otp.OtpCodeHash))
+            {
+                otp.AttemptCount++;
+                await _context.SaveChangesAsync();
+                return BadRequest("OTP sai");
+            }
+
+            var user = await _context.Users.FindAsync(otp.UserId);
+            if (user == null)
+                return BadRequest("Người dùng không tồn tại");
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            otp.IsUsed = true;
+            otp.UsedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Đổi mật khẩu thành công");
+        }
 
     }
 

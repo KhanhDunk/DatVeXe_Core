@@ -24,6 +24,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[OtpToken]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Payment]",
          "ObjectType": 0
       },

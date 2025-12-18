@@ -17,6 +17,8 @@ public partial class BookingSystemContext : DbContext
 
     public virtual DbSet<Driver> Drivers { get; set; }
 
+    public virtual DbSet<OtpToken> OtpTokens { get; set; }
+
     public virtual DbSet<Payment> Payments { get; set; }
 
     public virtual DbSet<Permission> Permissions { get; set; }
@@ -135,6 +137,59 @@ public partial class BookingSystemContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<OtpToken>(entity =>
+        {
+            entity.HasKey(e => e.OtpId).HasName("PK__OtpToken__AEE35435ECDF3595");
+
+            entity.ToTable("OtpToken");
+
+            entity.HasIndex(e => new { e.UserId, e.OtpType, e.IsUsed }, "UQ_OtpToken_User_Email").IsUnique();
+
+            entity.Property(e => e.OtpId).HasColumnName("otp_id");
+            entity.Property(e => e.AttemptCount)
+                .HasDefaultValue(0)
+                .HasColumnName("attempt_count");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("email");
+            entity.Property(e => e.ExpiresAt)
+                .HasColumnType("datetime")
+                .HasColumnName("expires_at");
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(45)
+                .HasColumnName("ip_address");
+            entity.Property(e => e.IsUsed)
+                .HasDefaultValue(false)
+                .HasColumnName("is_used");
+            entity.Property(e => e.MaxAttempt)
+                .HasDefaultValue(5)
+                .HasColumnName("max_attempt");
+            entity.Property(e => e.OtpCodeHash)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasColumnName("otp_code_hash");
+            entity.Property(e => e.OtpType)
+                .IsRequired()
+                .HasMaxLength(30)
+                .HasColumnName("otp_type");
+            entity.Property(e => e.UsedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("used_at");
+            entity.Property(e => e.UserAgent)
+                .HasMaxLength(255)
+                .HasColumnName("user_agent");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.OtpTokens)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_OtpToken_User");
         });
 
         modelBuilder.Entity<Payment>(entity =>

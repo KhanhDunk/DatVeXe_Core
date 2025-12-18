@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Models.DTO;
 using Models.Models;
 using Service.Interface;
 using Service.Service;
@@ -18,6 +20,8 @@ var jwt = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwt["Key"] ?? throw new Exception("JWT Key not found"));
 var issuer = jwt["Issuer"];
 var audience = jwt["Audience"];
+
+
 
 
 
@@ -59,7 +63,10 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<JwtService>();
 
 
+builder.Services.Configure<EmailSetting>(
+    builder.Configuration.GetSection("EmailSettings"));
 
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 
 
@@ -139,6 +146,6 @@ app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseRateLimiter();
+app.UseRateLimiter();// Giới hạn spam 
 
 app.Run();

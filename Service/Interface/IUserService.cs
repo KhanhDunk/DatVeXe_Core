@@ -14,7 +14,12 @@ namespace Service.Interface
         void create(User user);
 
 
-        List<UserDTO> GetAll();    
+        List<UserDTO> GetAll();
+
+
+        List<UserDTO> FindByUsername(string username);
+
+        Task SendOtpAsync(string email, string otp);
 
     }
 }

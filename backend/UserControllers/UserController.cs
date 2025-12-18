@@ -30,8 +30,54 @@ namespace backend.Controllers
             ));
         }
 
+        /// <summary>
+        /// Tìm kiếm user theo username
+        /// </summary>
+        //[Authorize(Roles = "Admin,User")] // Admin hoặc User đều được
+        [HttpGet("search")]
+        public ActionResult<ResponseDTO<List<UserDTO>>> SearchUser([FromQuery] string username)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                    return BadRequest(new ResponseDTO<List<UserDTO>>(
+                        success: false,
+                        message: "Username không được để trống",
+                        data: null
+                    ));
+                }
 
+                // Gọi service tìm kiếm
+                var users = _userService.FindByUsername(username);
 
+                if (users == null || users.Count == 0)
+                {
+                    return NotFound(new ResponseDTO<List<UserDTO>>(
+                        success: false,
+                        message: "Không tìm thấy user nào",
+                        data: null
+                    ));
+                }
 
+                return Ok(new ResponseDTO<List<UserDTO>>(
+                    success: true,
+                    message: "Tìm kiếm user thành công",
+                    data: users
+                ));
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nếu cần
+                return StatusCode(500, new ResponseDTO<List<UserDTO>>(
+                    success: false,
+                    message: "Lỗi server: " + ex.Message,
+                    data: null
+                ));
+            }
+        }
     }
+
+
 }
+

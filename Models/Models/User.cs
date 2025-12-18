@@ -27,6 +27,8 @@ public partial class User
 
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 
+    public virtual ICollection<OtpToken> OtpTokens { get; set; } = new List<OtpToken>();
+
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     public virtual Role Role { get; set; }
