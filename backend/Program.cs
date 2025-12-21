@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using Models.DTO;
 using Models.Models;
 using Service.Interface;
@@ -66,6 +66,9 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.Configure<EmailSetting>(
     builder.Configuration.GetSection("EmailSettings"));
 
+// Register EmailSender so IEmailSender can be resolved by controllers
+builder.Services.AddTransient<IEmailSender, EmailSender>();
+
 
 
 // Rate limiter
@@ -96,7 +99,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
+        Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Description = "Nhập JWT token dạng: Bearer {token}"
@@ -104,6 +107,10 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", securityScheme);
 
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { securityScheme, new string[] { } }
+    });
 
 });
 
