@@ -7,10 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Removed conflicting 'Swagger' package which defined types in Microsoft.OpenApi and caused conflicts -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="10.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

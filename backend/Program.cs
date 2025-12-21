@@ -66,8 +66,6 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.Configure<EmailSetting>(
     builder.Configuration.GetSection("EmailSettings"));
 
-builder.Services.AddTransient<IEmailSender, EmailSender>();
-
 
 
 // Rate limiter
@@ -106,7 +104,7 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", securityScheme);
 
-  
+
 });
 
 

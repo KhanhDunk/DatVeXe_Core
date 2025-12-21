@@ -227,27 +227,28 @@ CREATE TABLE Review (
 CREATE TABLE OtpToken (
     otp_id INT IDENTITY PRIMARY KEY,
 
-    user_id INT NULL,                     -- Có thể null (trường hợp email chưa tồn tại)
-    email NVARCHAR(100) NOT NULL,          -- Email nhận OTP
-    otp_code_hash NVARCHAR(255) NOT NULL,  -- OTP đã hash (KHÔNG lưu OTP thô)
+    user_id INT NOT NULL,                     -- Bắt buộc liên kết với user đã tồn tại
+    email NVARCHAR(100) NOT NULL,             -- Email nhận OTP (phải trùng với User)
+    otp_code_hash NVARCHAR(255) NOT NULL,     -- OTP đã hash, không lưu OTP thô
+    otp_type NVARCHAR(30) NOT NULL,           -- reset_password, verify_email, login
 
-    otp_type NVARCHAR(30) NOT NULL,        -- reset_password, verify_email, login
+    expires_at DATETIME NOT NULL,             -- Thời gian hết hạn OTP
+    is_used BIT DEFAULT 0,                     -- Đã dùng hay chưa
+    attempt_count INT DEFAULT 0,              -- Số lần nhập sai
+    max_attempt INT DEFAULT 5,                -- Giới hạn số lần thử
 
-    expires_at DATETIME NOT NULL,          -- Thời gian hết hạn OTP
-    is_used BIT DEFAULT 0,                 -- Đã dùng hay chưa
-
-    attempt_count INT DEFAULT 0,           -- Số lần nhập sai
-    max_attempt INT DEFAULT 5,             -- Giới hạn số lần thử
-
-    ip_address NVARCHAR(45) NULL,          -- IPv4 / IPv6
-    user_agent NVARCHAR(255) NULL,         -- Trình duyệt / thiết bị
+    ip_address NVARCHAR(45) NULL,             -- IPv4 / IPv6
+    user_agent NVARCHAR(255) NULL,            -- Trình duyệt / thiết bị
 
     created_at DATETIME DEFAULT GETDATE(),
     used_at DATETIME NULL,
 
-    FOREIGN KEY (user_id) REFERENCES [User](user_id)
-);
+    CONSTRAINT FK_OtpToken_User FOREIGN KEY (user_id)
+        REFERENCES [User](user_id)
+        ON DELETE CASCADE,
 
+    CONSTRAINT UQ_OtpToken_User_Email UNIQUE (user_id, otp_type, is_used)
+);
 
 /* =========================
    INDEXES

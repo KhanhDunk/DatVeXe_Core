@@ -1,0 +1,76 @@
+﻿## =========================
+## Visual Studio / .NET
+## =========================
+
+# User-specific files
+*.rsuser
+*.suo
+# Giữ appsettings.Development.json để commit
+# *.user    <-- comment dòng này nếu bạn muốn commit appsettings.Development.json
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache
+.vs/
+
+# Build results
+bin/
+obj/
+Debug/
+Release/
+
+# Rider
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Backup & temporary files
+*.backup
+*.log
+*.tmp
+*.temp
+
+# NuGet packages
+*.nupkg
+packages/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# IIS Express
+*.vspscc
+*.vssscc
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# User-specific files
+*.dotCover
+*.resharper
+_ReSharper*/
+*.DotSettings.user
+*.DotSettings
+
+# Windows thumbnail cache
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Mac
+.DS_Store
+
+# Others
+*.pidb
+*.sdf
+*.cache
+*.dbmdl
+
+
+# =========================
+# Keep appsettings.Development.json
+# =========================
+!appsettings.Development.json

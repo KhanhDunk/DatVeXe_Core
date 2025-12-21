@@ -7,10 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Removed conflicting 'Swagger' package which defined types in Microsoft.OpenApi and caused conflicts -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.20" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="10.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="8.0.20" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
