@@ -1,0 +1,16 @@
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.csproj.AssemblyReference.cache
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.GeneratedMSBuildEditorConfig.editorconfig
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.AssemblyInfoInputs.cache
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.AssemblyInfo.cs
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.csproj.CoreCompileInputs.cache
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.sourcelink.json
+D:\GameLinkNeverDie\DatVeXe_Core\Service\bin\Debug\net8.0\Service.deps.json
+D:\GameLinkNeverDie\DatVeXe_Core\Service\bin\Debug\net8.0\Service.dll
+D:\GameLinkNeverDie\DatVeXe_Core\Service\bin\Debug\net8.0\Service.pdb
+D:\GameLinkNeverDie\DatVeXe_Core\Service\bin\Debug\net8.0\Models.dll
+D:\GameLinkNeverDie\DatVeXe_Core\Service\bin\Debug\net8.0\Models.pdb
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.csproj.Up2Date
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.dll
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\refint\Service.dll
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\Service.pdb
+D:\GameLinkNeverDie\DatVeXe_Core\Service\obj\Debug\net8.0\ref\Service.dll
