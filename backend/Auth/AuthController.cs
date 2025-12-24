@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Models.DTO;
 using Models.Models;
+using Service.Background;
 using Service.Interface;
 using Service.Service;
 using Service.Utility;
@@ -24,16 +25,16 @@ namespace backend.Auth
         private readonly JwtService _jwtService;
         private IUserService _userService;
         private readonly IPasswordHasher<User> _passwordHasher;
-        private readonly IEmailSender _emailSender;
+        private readonly IEmailBackgroundQueue _emailQueue;
         private readonly BookingSystemContext _context;
 
-        public AuthController(JwtService jwtService, IUserService userService, IPasswordHasher<User> passwordHasher, BookingSystemContext context, IEmailSender emailSender)
+        public AuthController(JwtService jwtService, IUserService userService, IPasswordHasher<User> passwordHasher, BookingSystemContext context, IEmailBackgroundQueue emailQueue)
         {
             _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
             _context = context;
-            _emailSender = emailSender;
+            _emailQueue = emailQueue;
         }
 
         [HttpPost("login")]
@@ -138,68 +139,127 @@ namespace backend.Auth
 
         // 1️⃣ Quên mật khẩu: gửi OTP
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        [EnableRateLimiting("forgot_password_limit")]
+        public async Task<ActionResult<ResponseDTO<string>>> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (user == null) return BadRequest("Email không tồn tại");
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(new ResponseDTO<string>(false, "Email không hợp lệ", null, "INVALID_INPUT"));
+            }
+
+            var normalizedEmail = request.Email.Trim();
+
+            var user = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+
+            if (user == null)
+            {
+                return BadRequest(new ResponseDTO<string>(false, "Email không tồn tại", null, "EMAIL_NOT_FOUND"));
+            }
 
             var otp = Helper.GenerateOtp();
             var otpHash = Helper.HashOtp(otp);
 
-            _context.OtpTokens.Add(new OtpToken
+            var existingToken = await _context.OtpTokens
+                .FirstOrDefaultAsync(o =>
+                    o.UserId == user.UserId &&
+                    o.OtpType == "reset_password" &&
+                    o.IsUsed == false);
+
+            if (existingToken != null)
             {
-                Email = user.Email,
-                UserId = user.UserId,
-                OtpCodeHash = otpHash,
-                OtpType = "reset_password",
-                ExpiresAt = DateTime.Now.AddMinutes(5)
-            });
+                existingToken.OtpCodeHash = otpHash;
+                existingToken.Email = user.Email;
+                existingToken.AttemptCount = 0;
+                existingToken.ExpiresAt = DateTime.UtcNow.AddMinutes(5);
+                existingToken.CreatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _context.OtpTokens.Add(new OtpToken
+                {
+                    Email = user.Email,
+                    UserId = user.UserId,
+                    OtpCodeHash = otpHash,
+                    OtpType = "reset_password",
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
 
             await _context.SaveChangesAsync();
 
-            await _emailSender.SendEmailAsync(user.Email, "Mã OTP Reset Password", $"Mã OTP của bạn là: {otp}");
+            await _emailQueue.QueueEmailAsync(new EmailMessage
+            {
+                To = user.Email,
+                Subject = "Mã OTP Reset Password",
+                Body = $"Mã OTP của bạn là: {otp}",
+                IsHtml = false
+            });
 
-            return Ok("Đã gửi mã OTP về email");
+            return Ok(new ResponseDTO<string>(true, "Đã gửi mã OTP về email", null, "OTP_SENT"));
         }
 
         // 2️⃣ Reset Password bằng OTP
         [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        public async Task<ActionResult<ResponseDTO<string>>> ResetPassword([FromBody] ResetPasswordRequest request)
         {
+            if (request == null ||
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Otp) ||
+                string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new ResponseDTO<string>(false, "Dữ liệu không hợp lệ", null, "INVALID_INPUT"));
+            }
+
+            var normalizedEmail = request.Email.Trim();
+            var otpCode = request.Otp.Trim();
+
             var otp = await _context.OtpTokens
+                .AsTracking()
+                .Include(o => o.User)
                 .Where(x =>
-                    x.Email == request.Email &&
+                    x.Email == normalizedEmail &&
                     x.OtpType == "reset_password" &&
                     x.IsUsed != true &&
-                    x.ExpiresAt > DateTime.Now)
+                    x.ExpiresAt > DateTime.UtcNow)
                 .OrderByDescending(x => x.CreatedAt)
                 .FirstOrDefaultAsync();
 
             if (otp == null)
-                return BadRequest("OTP không hợp lệ hoặc đã hết hạn");
+            {
+                return BadRequest(new ResponseDTO<string>(false, "OTP không hợp lệ hoặc đã hết hạn", null, "OTP_INVALID"));
+            }
 
             if (otp.AttemptCount >= otp.MaxAttempt)
-                return BadRequest("OTP đã bị khóa");
+            {
+                return BadRequest(new ResponseDTO<string>(false, "OTP đã bị khóa", null, "OTP_LOCKED"));
+            }
 
-            if (!Helper.VerifyOtp(request.Otp, otp.OtpCodeHash))
+            if (!Helper.VerifyOtp(otpCode, otp.OtpCodeHash))
             {
                 otp.AttemptCount++;
                 await _context.SaveChangesAsync();
-                return BadRequest("OTP sai");
+                return BadRequest(new ResponseDTO<string>(false, "OTP sai", null, "OTP_INCORRECT"));
             }
 
-            var user = await _context.Users.FindAsync(otp.UserId);
-            if (user == null)
-                return BadRequest("Người dùng không tồn tại");
+            if (otp.User == null)
+            {
+                otp.User = await _context.Users.FindAsync(otp.UserId);
+                if (otp.User == null)
+                {
+                    return BadRequest(new ResponseDTO<string>(false, "Người dùng không tồn tại", null, "USER_NOT_FOUND"));
+                }
+            }
 
-            user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-
+            otp.User.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             otp.IsUsed = true;
-            otp.UsedAt = DateTime.Now;
+            otp.UsedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            return Ok("Đổi mật khẩu thành công");
+            return Ok(new ResponseDTO<string>(true, "Đổi mật khẩu thành công", null, "PASSWORD_RESET_SUCCESS"));
         }
 
     }

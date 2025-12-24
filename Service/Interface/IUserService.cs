@@ -1,8 +1,5 @@
-﻿using Models.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Models.DTO;
+using Models.Models;
 using System.Threading.Tasks;
 
 namespace Service.Interface
@@ -13,11 +10,10 @@ namespace Service.Interface
         bool Exists(string username, string email );
         void create(User user);
 
-
-        List<UserDTO> GetAll();
-
-
-        List<UserDTO> FindByUsername(string username);
+        Task<ResponseDTO<PagedResult<UserDTO>>> GetUsersAsync(UserQueryParameters parameters);
+        Task<ResponseDTO<UserDTO>> CreateUserAsync(RegisterDTO dto);
+        Task<ResponseDTO<UserDTO>> UpdateUserAsync(UpdateUserDTO dto);
+        Task<ResponseDTO<bool>> UpdateUserStatusAsync(UserStatusUpdateDTO dto);
 
         Task SendOtpAsync(string email, string otp);
 

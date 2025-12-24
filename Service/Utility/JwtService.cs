@@ -26,11 +26,15 @@ public class JwtService
             new Claim(ClaimTypes.Role, user.Role.RoleName)
         };
 
+        var durationMinutes = double.TryParse(jwtSettings["DurationInMinutes"], out var minutes)
+            ? minutes
+            : 60; // default 1 hour if missing
+
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
-            expires: DateTime.Now.AddMinutes(double.Parse(jwtSettings["DurationInMinutes"])),
+            expires: DateTime.UtcNow.AddMinutes(durationMinutes),
             signingCredentials: creds
         );
 

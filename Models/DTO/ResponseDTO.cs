@@ -10,15 +10,17 @@ namespace Models.DTO
     {
         public bool Success { get; set; }
         public string Message { get; set; }
+        public string? Code { get; set; }
         public T? Data { get; set; }
 
-        public ResponseDTO() { }    
+        public ResponseDTO() { }
 
-        public ResponseDTO(bool success, string message, T? data = default)
+        public ResponseDTO(bool success, string message, T? data = default, string? code = null)
         {
             Success = success;
             Message = message;
             Data = data;
+            Code = code;
         }
 
     }
