@@ -23,10 +23,13 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore packages
+      working-directory: ./backend
       run: dotnet restore
 
     - name: Build solution
+      working-directory: ./backend
       run: dotnet build --configuration Debug --no-restore
 
     - name: Run tests
+      working-directory: ./backend
       run: dotnet test --no-build --verbosity normal
