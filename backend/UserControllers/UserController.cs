@@ -1,83 +1,118 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models.DTO;
 using Service.Interface;
+using System.Threading.Tasks;
 
 namespace backend.Controllers
 {
+    [Authorize(Roles = "SuperAdmin")]
     [ApiController]
     [Route("api/[controller]")]
-    public class UserController : Controller
+    public class UserController : ControllerBase
     {
-
-        private IUserService _userService;
+        private readonly IUserService _userService;
 
         public UserController(IUserService userService)
         {
-            _userService = userService; 
+            _userService = userService;
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpGet("getUsers")]
-        public ActionResult<ResponseDTO<List<UserDTO>>> GetUsers()
+        [HttpGet]
+        public async Task<ActionResult<ResponseDTO<PagedResult<UserDTO>>>> GetUsers([FromQuery] UserQueryParameters parameters)
         {
-            var users = _userService.GetAll();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDTO<PagedResult<UserDTO>>(false, "Dữ liệu không hợp lệ", null, "INVALID_MODEL"));
+            }
 
-            return Ok(new ResponseDTO<List<UserDTO>>(
-                success : true,
-                message :  "Lấy danh sách user thành công",
-                data: users
-            ));
+            var result = await _userService.GetUsersAsync(parameters ?? new UserQueryParameters());
+
+            if (!result.Success)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, result);
+            }
+
+            return Ok(result);
         }
 
-        /// <summary>
-        /// Tìm kiếm user theo username
-        /// </summary>
-        //[Authorize(Roles = "Admin,User")] // Admin hoặc User đều được
-        [HttpGet("search")]
-        public ActionResult<ResponseDTO<List<UserDTO>>> SearchUser([FromQuery] string username)
+        [HttpPost]
+        public async Task<ActionResult<ResponseDTO<UserDTO>>> CreateUser([FromBody] RegisterDTO request)
         {
-            try
+            if (request == null || !ModelState.IsValid)
             {
-                if (string.IsNullOrWhiteSpace(username))
-                {
-                    return BadRequest(new ResponseDTO<List<UserDTO>>(
-                        success: false,
-                        message: "Username không được để trống",
-                        data: null
-                    ));
-                }
-
-                // Gọi service tìm kiếm
-                var users = _userService.FindByUsername(username);
-
-                if (users == null || users.Count == 0)
-                {
-                    return NotFound(new ResponseDTO<List<UserDTO>>(
-                        success: false,
-                        message: "Không tìm thấy user nào",
-                        data: null
-                    ));
-                }
-
-                return Ok(new ResponseDTO<List<UserDTO>>(
-                    success: true,
-                    message: "Tìm kiếm user thành công",
-                    data: users
-                ));
+                return BadRequest(new ResponseDTO<UserDTO>(false, "Dữ liệu không hợp lệ", null, "INVALID_MODEL"));
             }
-            catch (Exception ex)
+
+            var result = await _userService.CreateUserAsync(request);
+
+            if (!result.Success)
             {
-                // Log lỗi nếu cần
-                return StatusCode(500, new ResponseDTO<List<UserDTO>>(
-                    success: false,
-                    message: "Lỗi server: " + ex.Message,
-                    data: null
-                ));
+                return result.Code switch
+                {
+                    "USER_ALREADY_EXISTS" => Conflict(result),
+                    "ROLE_NOT_FOUND" => BadRequest(result),
+                    "INVALID_INPUT" => BadRequest(result),
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, result)
+                };
             }
+
+            return StatusCode(StatusCodes.Status201Created, result);
+        }
+
+        [HttpPut("{userId:int}")]
+        public async Task<ActionResult<ResponseDTO<UserDTO>>> UpdateUser(int userId, [FromBody] UpdateUserDTO request)
+        {
+            if (request == null || !ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDTO<UserDTO>(false, "Dữ liệu không hợp lệ", null, "INVALID_MODEL"));
+            }
+
+            request.UserId = userId;
+
+            var result = await _userService.UpdateUserAsync(request);
+
+            if (!result.Success)
+            {
+                return result.Code switch
+                {
+                    "USER_NOT_FOUND" => NotFound(result),
+                    "USER_ALREADY_EXISTS" => Conflict(result),
+                    "ROLE_NOT_FOUND" => BadRequest(result),
+                    "INVALID_INPUT" => BadRequest(result),
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, result)
+                };
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPatch("{userId:int}/status")]
+        public async Task<ActionResult<ResponseDTO<bool>>> UpdateStatus(int userId, [FromBody] UserStatusUpdateDTO request)
+        {
+            if (request == null || !ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDTO<bool>(false, "Dữ liệu không hợp lệ", false, "INVALID_MODEL"));
+            }
+
+            request.UserId = userId;
+
+            var result = await _userService.UpdateUserStatusAsync(request);
+
+            if (!result.Success)
+            {
+                return result.Code switch
+                {
+                    "USER_NOT_FOUND" => NotFound(result),
+                    "INVALID_STATUS" => BadRequest(result),
+                    "INVALID_INPUT" => BadRequest(result),
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, result)
+                };
+            }
+
+            return Ok(result);
         }
     }
-
-
 }
 

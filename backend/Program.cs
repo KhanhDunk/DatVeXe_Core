@@ -8,9 +8,11 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Models.DTO;
 using Models.Models;
+using Service.Background;
 using Service.Interface;
 using Service.Service;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,6 +70,8 @@ builder.Services.Configure<EmailSetting>(
 
 // Register EmailSender so IEmailSender can be resolved by controllers
 builder.Services.AddTransient<IEmailSender, EmailSender>();
+builder.Services.AddSingleton<IEmailBackgroundQueue, EmailBackgroundQueue>();
+builder.Services.AddHostedService<QueuedEmailSender>();
 
 
 
@@ -79,6 +83,16 @@ builder.Services.AddRateLimiter(options =>
         opt.Window = TimeSpan.FromMinutes(1);
         opt.PermitLimit = 5;
         opt.QueueLimit = 0;
+    });
+
+    options.AddTokenBucketLimiter("forgot_password_limit", opt =>
+    {
+        opt.TokenLimit = 1;
+        opt.TokensPerPeriod = 1;
+        opt.ReplenishmentPeriod = TimeSpan.FromMinutes(1);
+        opt.AutoReplenishment = true;
+        opt.QueueLimit = 1;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
     });
 });
 
