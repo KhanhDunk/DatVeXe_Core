@@ -6,8 +6,6 @@ GO
 USE BookingSystem;
 GO
 
-
-
 /* =========================
    ROLE
 ========================= */
@@ -48,7 +46,7 @@ CREATE TABLE [User] (
     email NVARCHAR(100) UNIQUE,
     phone NVARCHAR(20) UNIQUE,
     role_id INT NOT NULL,
-    active BIT DEFAULT 1, /* Mặc đinh 1 là active , 0 unactive*/
+    active BIT DEFAULT 1,
     created_at DATETIME DEFAULT GETDATE(),
     updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (role_id) REFERENCES Role(role_id)
@@ -71,7 +69,7 @@ CREATE TABLE Route (
 ========================= */
 CREATE TABLE Vehicle (
     vehicle_id INT IDENTITY PRIMARY KEY,
-    license_plate NVARCHAR(20) NOT NULL UNIQUE, /* Biển số xe */ 
+    license_plate NVARCHAR(20) NOT NULL UNIQUE,
     seat_capacity INT NOT NULL,
     vehicle_type NVARCHAR(50),
     is_active BIT DEFAULT 1,
@@ -99,8 +97,8 @@ CREATE TABLE Driver (
     driver_id INT IDENTITY PRIMARY KEY,
     full_name NVARCHAR(100) NOT NULL,
     phone NVARCHAR(20) NOT NULL UNIQUE,
-    license_number NVARCHAR(50) NOT NULL UNIQUE, /*Số của giấy phép lái xe*/
-    license_type NVARCHAR(20), /*Loại giấy phép lái xe*/
+    license_number NVARCHAR(50) NOT NULL UNIQUE,
+    license_type NVARCHAR(20),
     experience_year INT DEFAULT 0,
     is_active BIT DEFAULT 1,
     created_at DATETIME DEFAULT GETDATE(),
@@ -126,8 +124,8 @@ CREATE TABLE Trip (
     FOREIGN KEY (route_id) REFERENCES Route(route_id),
     FOREIGN KEY (vehicle_id) REFERENCES Vehicle(vehicle_id),
     FOREIGN KEY (driver_id) REFERENCES Driver(driver_id),
-    FOREIGN KEY (created_by) REFERENCES [User](user_id), /* id của người tạo */
-    CHECK (status IN ('open','full','departed','completed','cancelled')) /*Mở , Đầy chuyến , Khởi hành, Hoàn thành, Hủy Chuyến*/
+    FOREIGN KEY (created_by) REFERENCES [User](user_id),
+    CHECK (status IN ('open','full','departed','completed','cancelled'))
 );
 
 /* =========================
@@ -135,18 +133,18 @@ CREATE TABLE Trip (
 ========================= */
 CREATE TABLE Promotion (
     promotion_id INT IDENTITY PRIMARY KEY,
-    promo_code NVARCHAR(50) NOT NULL UNIQUE, /*mã giảm giá , Barcode , QRCode */
+    promo_code NVARCHAR(50) NOT NULL UNIQUE,
     description NVARCHAR(255),
-    discount_type NVARCHAR(20) NOT NULL, /*Loại giảm giá */
-    discount_value DECIMAL(12,2) NOT NULL, /* Giá trị giảm */
-    min_order_amount DECIMAL(12,2) DEFAULT 0,/* Giá trị đơn hàng tối thiểu để áp dụng mã giảm giá */
-    max_discount DECIMAL(12,2), /*Mức giảm tối đa*/
+    discount_type NVARCHAR(20) NOT NULL,
+    discount_value DECIMAL(12,2) NOT NULL,
+    min_order_amount DECIMAL(12,2) DEFAULT 0,
+    max_discount DECIMAL(12,2),
     start_date DATETIME NOT NULL,
     end_date DATETIME NOT NULL,
-    usage_limit INT, /*Số lần sử dụng */
+    usage_limit INT,
     is_active BIT DEFAULT 1,
     created_at DATETIME DEFAULT GETDATE(),
-    CHECK (discount_type IN ('percent','fixed')) /*percent : Giảm theo % , Fixed : Giảm theo số tiền cố định */
+    CHECK (discount_type IN ('percent','fixed'))
 );
 
 /* =========================
@@ -165,24 +163,7 @@ CREATE TABLE Booking (
     FOREIGN KEY (user_id) REFERENCES [User](user_id),
     FOREIGN KEY (trip_id) REFERENCES Trip(trip_id),
     FOREIGN KEY (promotion_id) REFERENCES Promotion(promotion_id),
-    CHECK (status IN ('pending','confirmed','cancelled','expired','refunded')), /* Trạng thái booking */ 
-
-);
-
-/* =========================
-   PAYMENT
-========================= */
-CREATE TABLE Payment (
-    payment_id INT IDENTITY PRIMARY KEY,
-    booking_id INT NOT NULL,
-    payment_method NVARCHAR(30),
-    amount DECIMAL(12,2) NOT NULL,
-    status NVARCHAR(20) DEFAULT 'pending',
-    payment_date DATETIME DEFAULT GETDATE(),
-    created_at DATETIME DEFAULT GETDATE(),
-    updated_at DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (booking_id) REFERENCES Booking(booking_id) ON DELETE CASCADE,
-    CHECK (status IN ('pending','success','failed','refunded')) /* Trạng thái thanh toán */
+    CHECK (status IN ('pending','confirmed','cancelled','expired','refunded'))
 );
 
 /* =========================
@@ -191,7 +172,7 @@ CREATE TABLE Payment (
 CREATE TABLE Ticket (
     ticket_id INT IDENTITY PRIMARY KEY,
     ticket_code NVARCHAR(50) NOT NULL UNIQUE,
-    booking_id INT NOT NULL ,
+    booking_id INT NOT NULL,
     trip_id INT NOT NULL,
     seat_id INT NOT NULL,
     issued_at DATETIME DEFAULT GETDATE(),
@@ -200,9 +181,8 @@ CREATE TABLE Ticket (
     FOREIGN KEY (booking_id) REFERENCES Booking(booking_id) ON DELETE CASCADE,
     FOREIGN KEY (trip_id) REFERENCES Trip(trip_id),
     FOREIGN KEY (seat_id) REFERENCES Seat(seat_id),
-    CHECK (status IN ('issued','checked_in','cancelled','expired')), /*Trạng thái của vé : Phát hành, checkin, hủy vé , quá hạn*/
+    CHECK (status IN ('issued','checked_in','cancelled','expired')),
     CONSTRAINT UQ_Ticket_Trip_Seat UNIQUE (trip_id, seat_id)
-
 );
 
 /* =========================
@@ -213,7 +193,7 @@ CREATE TABLE Review (
     user_id INT NOT NULL,
     trip_id INT NOT NULL,
     driver_id INT NULL,
-    rating INT NOT NULL, /* Đánh giá 1 - 5 sao */
+    rating INT NOT NULL,
     comment NVARCHAR(Max),
     created_at DATETIME DEFAULT GETDATE(),
     CHECK (rating BETWEEN 1 AND 5),
@@ -223,31 +203,80 @@ CREATE TABLE Review (
     CONSTRAINT UQ_User_Trip UNIQUE (user_id, trip_id)
 );
 
-
+/* =========================
+   OTP TOKEN
+========================= */
 CREATE TABLE OtpToken (
     otp_id INT IDENTITY PRIMARY KEY,
-
-    user_id INT NOT NULL,                     -- Bắt buộc liên kết với user đã tồn tại
-    email NVARCHAR(100) NOT NULL,             -- Email nhận OTP (phải trùng với User)
-    otp_code_hash NVARCHAR(255) NOT NULL,     -- OTP đã hash, không lưu OTP thô
-    otp_type NVARCHAR(30) NOT NULL,           -- reset_password, verify_email, login
-
-    expires_at DATETIME NOT NULL,             -- Thời gian hết hạn OTP
-    is_used BIT DEFAULT 0,                     -- Đã dùng hay chưa
-    attempt_count INT DEFAULT 0,              -- Số lần nhập sai
-    max_attempt INT DEFAULT 5,                -- Giới hạn số lần thử
-
-    ip_address NVARCHAR(45) NULL,             -- IPv4 / IPv6
-    user_agent NVARCHAR(255) NULL,            -- Trình duyệt / thiết bị
-
+    user_id INT NOT NULL,
+    email NVARCHAR(100) NOT NULL,
+    otp_code_hash NVARCHAR(255) NOT NULL,
+    otp_type NVARCHAR(30) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    is_used BIT DEFAULT 0,
+    attempt_count INT DEFAULT 0,
+    max_attempt INT DEFAULT 5,
+    ip_address NVARCHAR(45) NULL,
+    user_agent NVARCHAR(255) NULL,
     created_at DATETIME DEFAULT GETDATE(),
     used_at DATETIME NULL,
-
     CONSTRAINT FK_OtpToken_User FOREIGN KEY (user_id)
         REFERENCES [User](user_id)
         ON DELETE CASCADE,
-
     CONSTRAINT UQ_OtpToken_User_Email UNIQUE (user_id, otp_type, is_used)
+);
+
+/* =========================
+   CARGO (HÀNG HÓA)
+========================= */
+CREATE TABLE Cargo (
+    cargo_id INT IDENTITY PRIMARY KEY,
+    user_id INT NOT NULL,
+    description NVARCHAR(255) NOT NULL,
+    weight DECIMAL(12,2) NOT NULL,
+    volume DECIMAL(12,2),
+    pickup_location NVARCHAR(100) NOT NULL,
+    dropoff_location NVARCHAR(100) NOT NULL,
+    cargo_type NVARCHAR(50),
+    is_active BIT DEFAULT 1,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (user_id) REFERENCES [User](user_id)
+);
+
+/* =========================
+   CARGO TRIP
+========================= */
+CREATE TABLE CargoTrip (
+    cargo_trip_id INT IDENTITY PRIMARY KEY,
+    cargo_id INT NOT NULL,
+    trip_id INT NOT NULL,
+    status NVARCHAR(20) DEFAULT 'pending',
+    assigned_at DATETIME DEFAULT GETDATE(),
+    delivered_at DATETIME NULL,
+    FOREIGN KEY (cargo_id) REFERENCES Cargo(cargo_id) ON DELETE CASCADE,
+    FOREIGN KEY (trip_id) REFERENCES Trip(trip_id),
+    CHECK (status IN ('pending','in_transit','delivered','cancelled'))
+);
+
+/* =========================
+   BILL CHUNG (VÉ & HÀNG)
+========================= */
+CREATE TABLE Bill (
+    bill_id INT IDENTITY PRIMARY KEY,
+    user_id INT NOT NULL,
+    bill_type NVARCHAR(20) NOT NULL,       -- passenger, cargo
+    related_id INT NOT NULL,                -- booking_id hoặc cargo_id tùy bill_type
+    total_amount DECIMAL(12,2) NOT NULL,
+    discount_amount DECIMAL(12,2) DEFAULT 0,
+    final_amount DECIMAL(12,2) NOT NULL,
+    status NVARCHAR(20) DEFAULT 'pending', -- pending, paid, refunded, cancelled
+    bill_date DATETIME DEFAULT GETDATE(),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (user_id) REFERENCES [User](user_id),
+    CHECK (bill_type IN ('passenger','cargo')),
+    CHECK (status IN ('pending','paid','refunded','cancelled'))
 );
 
 /* =========================
@@ -264,9 +293,6 @@ CREATE INDEX IDX_Trip_Driver ON Trip(driver_id);
 CREATE INDEX IDX_Booking_User_Status ON Booking(user_id, status);
 CREATE INDEX IDX_Booking_Trip ON Booking(trip_id);
 
-CREATE INDEX IDX_Payment_Booking ON Payment(booking_id);
-CREATE INDEX IDX_Payment_Status ON Payment(status);
-
 CREATE INDEX IDX_Ticket_Code ON Ticket(ticket_code);
 CREATE INDEX IDX_Ticket_Trip ON Ticket(trip_id);
 CREATE INDEX IDX_Ticket_Status ON Ticket(status);
@@ -281,3 +307,9 @@ CREATE INDEX IDX_Promotion_Active ON Promotion(is_active);
 CREATE INDEX IDX_Review_Trip ON Review(trip_id);
 CREATE INDEX IDX_Review_Driver ON Review(driver_id);
 CREATE INDEX IDX_Review_Rating ON Review(rating);
+
+CREATE INDEX IDX_Cargo_User ON Cargo(user_id);
+CREATE INDEX IDX_CargoTrip_Trip ON CargoTrip(trip_id);
+CREATE INDEX IDX_Bill_User ON Bill(user_id);
+CREATE INDEX IDX_Bill_Type ON Bill(bill_type);
+

@@ -25,7 +25,11 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
+    public virtual ICollection<Bill> Bills { get; set; } = new List<Bill>();
+
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+
+    public virtual ICollection<Cargo> Cargos { get; set; } = new List<Cargo>();
 
     public virtual ICollection<OtpToken> OtpTokens { get; set; } = new List<OtpToken>();
 

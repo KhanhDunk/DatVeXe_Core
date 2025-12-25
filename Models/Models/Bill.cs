@@ -5,31 +5,29 @@ using System.Collections.Generic;
 
 namespace Models.Models;
 
-public partial class Booking
+public partial class Bill
 {
-    public int BookingId { get; set; }
+    public int BillId { get; set; }
 
     public int UserId { get; set; }
 
-    public int TripId { get; set; }
+    public string BillType { get; set; }
 
-    public int? PromotionId { get; set; }
+    public int RelatedId { get; set; }
+
+    public decimal TotalAmount { get; set; }
 
     public decimal? DiscountAmount { get; set; }
 
-    public DateTime? BookingDate { get; set; }
+    public decimal FinalAmount { get; set; }
 
     public string Status { get; set; }
+
+    public DateTime? BillDate { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
-
-    public virtual Promotion Promotion { get; set; }
-
-    public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
-
-    public virtual Trip Trip { get; set; }
 
     public virtual User User { get; set; }
 }

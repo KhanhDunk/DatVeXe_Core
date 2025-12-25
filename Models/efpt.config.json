@@ -4,19 +4,34 @@
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": false,
-   "MinimumProductVersion": "2.6.1186",
+   "IrregularWords": null,
+   "MinimumProductVersion": "2.6.1248",
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "Models",
+   "PluralRules": null,
    "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "Models",
    "Schemas": null,
    "SelectedHandlebarsLanguage": 2,
    "SelectedToBeGenerated": 0,
+   "SingularRules": null,
    "T4TemplatePath": null,
    "Tables": [
       {
+         "Name": "[dbo].[Bill]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Booking]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Cargo]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CargoTrip]",
          "ObjectType": 0
       },
       {
@@ -25,10 +40,6 @@
       },
       {
          "Name": "[dbo].[OtpToken]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[Payment]",
          "ObjectType": 0
       },
       {

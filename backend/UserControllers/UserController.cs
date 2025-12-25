@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models.DTO;
 using Service.Interface;
+using Helper.Enums;
 using System.Threading.Tasks;
 
 namespace backend.Controllers
@@ -24,7 +25,7 @@ namespace backend.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new ResponseDTO<PagedResult<UserDTO>>(false, "Dữ liệu không hợp lệ", null, "INVALID_MODEL"));
+                return BadRequest(new ResponseDTO<PagedResult<UserDTO>>(false, "Dữ liệu không hợp lệ", null, ResponseCode.InvalidData));
             }
 
             var result = await _userService.GetUsersAsync(parameters ?? new UserQueryParameters());
@@ -42,7 +43,7 @@ namespace backend.Controllers
         {
             if (request == null || !ModelState.IsValid)
             {
-                return BadRequest(new ResponseDTO<UserDTO>(false, "Dữ liệu không hợp lệ", null, "INVALID_MODEL"));
+                return BadRequest(new ResponseDTO<UserDTO>(false, "Dữ liệu không hợp lệ", null, ResponseCode.InvalidData));
             }
 
             var result = await _userService.CreateUserAsync(request);
@@ -51,9 +52,8 @@ namespace backend.Controllers
             {
                 return result.Code switch
                 {
-                    "USER_ALREADY_EXISTS" => Conflict(result),
-                    "ROLE_NOT_FOUND" => BadRequest(result),
-                    "INVALID_INPUT" => BadRequest(result),
+                    ResponseCode.UserExists => Conflict(result),
+                    ResponseCode.InvalidData => BadRequest(result),
                     _ => StatusCode(StatusCodes.Status500InternalServerError, result)
                 };
             }
@@ -66,7 +66,7 @@ namespace backend.Controllers
         {
             if (request == null || !ModelState.IsValid)
             {
-                return BadRequest(new ResponseDTO<UserDTO>(false, "Dữ liệu không hợp lệ", null, "INVALID_MODEL"));
+                return BadRequest(new ResponseDTO<UserDTO>(false, "Dữ liệu không hợp lệ", null, ResponseCode.InvalidData));
             }
 
             request.UserId = userId;
@@ -77,10 +77,8 @@ namespace backend.Controllers
             {
                 return result.Code switch
                 {
-                    "USER_NOT_FOUND" => NotFound(result),
-                    "USER_ALREADY_EXISTS" => Conflict(result),
-                    "ROLE_NOT_FOUND" => BadRequest(result),
-                    "INVALID_INPUT" => BadRequest(result),
+                    ResponseCode.UserExists => Conflict(result),
+                    ResponseCode.InvalidData => BadRequest(result),
                     _ => StatusCode(StatusCodes.Status500InternalServerError, result)
                 };
             }
@@ -93,7 +91,7 @@ namespace backend.Controllers
         {
             if (request == null || !ModelState.IsValid)
             {
-                return BadRequest(new ResponseDTO<bool>(false, "Dữ liệu không hợp lệ", false, "INVALID_MODEL"));
+                return BadRequest(new ResponseDTO<bool>(false, "Dữ liệu không hợp lệ", false, ResponseCode.InvalidData));
             }
 
             request.UserId = userId;
@@ -104,9 +102,7 @@ namespace backend.Controllers
             {
                 return result.Code switch
                 {
-                    "USER_NOT_FOUND" => NotFound(result),
-                    "INVALID_STATUS" => BadRequest(result),
-                    "INVALID_INPUT" => BadRequest(result),
+                    ResponseCode.InvalidData => BadRequest(result),
                     _ => StatusCode(StatusCodes.Status500InternalServerError, result)
                 };
             }

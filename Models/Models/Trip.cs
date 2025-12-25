@@ -33,6 +33,8 @@ public partial class Trip
 
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 
+    public virtual ICollection<CargoTrip> CargoTrips { get; set; } = new List<CargoTrip>();
+
     public virtual User CreatedByNavigation { get; set; }
 
     public virtual Driver Driver { get; set; }

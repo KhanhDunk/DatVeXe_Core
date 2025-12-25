@@ -13,13 +13,17 @@ public partial class BookingSystemContext : DbContext
     {
     }
 
+    public virtual DbSet<Bill> Bills { get; set; }
+
     public virtual DbSet<Booking> Bookings { get; set; }
+
+    public virtual DbSet<Cargo> Cargos { get; set; }
+
+    public virtual DbSet<CargoTrip> CargoTrips { get; set; }
 
     public virtual DbSet<Driver> Drivers { get; set; }
 
     public virtual DbSet<OtpToken> OtpTokens { get; set; }
-
-    public virtual DbSet<Payment> Payments { get; set; }
 
     public virtual DbSet<Permission> Permissions { get; set; }
 
@@ -43,9 +47,59 @@ public partial class BookingSystemContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Bill>(entity =>
+        {
+            entity.HasKey(e => e.BillId).HasName("PK__Bill__D706DDB30D789ED4");
+
+            entity.ToTable("Bill");
+
+            entity.HasIndex(e => e.BillType, "IDX_Bill_Type");
+
+            entity.HasIndex(e => e.UserId, "IDX_Bill_User");
+
+            entity.Property(e => e.BillId).HasColumnName("bill_id");
+            entity.Property(e => e.BillDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("bill_date");
+            entity.Property(e => e.BillType)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("bill_type");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.DiscountAmount)
+                .HasDefaultValue(0m)
+                .HasColumnType("decimal(12, 2)")
+                .HasColumnName("discount_amount");
+            entity.Property(e => e.FinalAmount)
+                .HasColumnType("decimal(12, 2)")
+                .HasColumnName("final_amount");
+            entity.Property(e => e.RelatedId).HasColumnName("related_id");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("pending")
+                .HasColumnName("status");
+            entity.Property(e => e.TotalAmount)
+                .HasColumnType("decimal(12, 2)")
+                .HasColumnName("total_amount");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Bills)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Bill__user_id__14270015");
+        });
+
         modelBuilder.Entity<Booking>(entity =>
         {
-            entity.HasKey(e => e.BookingId).HasName("PK__Booking__5DE3A5B1DFB06A36");
+            entity.HasKey(e => e.BookingId).HasName("PK__Booking__5DE3A5B1AE2E3B08");
 
             entity.ToTable("Booking");
 
@@ -80,22 +134,104 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasOne(d => d.Promotion).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.PromotionId)
-                .HasConstraintName("FK__Booking__promoti__0B91BA14");
+                .HasConstraintName("FK__Booking__promoti__66603565");
 
             entity.HasOne(d => d.Trip).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.TripId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Booking__trip_id__0A9D95DB");
+                .HasConstraintName("FK__Booking__trip_id__656C112C");
 
             entity.HasOne(d => d.User).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Booking__user_id__09A971A2");
+                .HasConstraintName("FK__Booking__user_id__6477ECF3");
+        });
+
+        modelBuilder.Entity<Cargo>(entity =>
+        {
+            entity.HasKey(e => e.CargoId).HasName("PK__Cargo__982828C48EDC3A99");
+
+            entity.ToTable("Cargo");
+
+            entity.HasIndex(e => e.UserId, "IDX_Cargo_User");
+
+            entity.Property(e => e.CargoId).HasColumnName("cargo_id");
+            entity.Property(e => e.CargoType)
+                .HasMaxLength(50)
+                .HasColumnName("cargo_type");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasColumnName("description");
+            entity.Property(e => e.DropoffLocation)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("dropoff_location");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.PickupLocation)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("pickup_location");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Volume)
+                .HasColumnType("decimal(12, 2)")
+                .HasColumnName("volume");
+            entity.Property(e => e.Weight)
+                .HasColumnType("decimal(12, 2)")
+                .HasColumnName("weight");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Cargos)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Cargo__user_id__05D8E0BE");
+        });
+
+        modelBuilder.Entity<CargoTrip>(entity =>
+        {
+            entity.HasKey(e => e.CargoTripId).HasName("PK__CargoTri__1748EE7D218D2DC1");
+
+            entity.ToTable("CargoTrip");
+
+            entity.HasIndex(e => e.TripId, "IDX_CargoTrip_Trip");
+
+            entity.Property(e => e.CargoTripId).HasColumnName("cargo_trip_id");
+            entity.Property(e => e.AssignedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("assigned_at");
+            entity.Property(e => e.CargoId).HasColumnName("cargo_id");
+            entity.Property(e => e.DeliveredAt)
+                .HasColumnType("datetime")
+                .HasColumnName("delivered_at");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("pending")
+                .HasColumnName("status");
+            entity.Property(e => e.TripId).HasColumnName("trip_id");
+
+            entity.HasOne(d => d.Cargo).WithMany(p => p.CargoTrips)
+                .HasForeignKey(d => d.CargoId)
+                .HasConstraintName("FK__CargoTrip__cargo__0A9D95DB");
+
+            entity.HasOne(d => d.Trip).WithMany(p => p.CargoTrips)
+                .HasForeignKey(d => d.TripId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__CargoTrip__trip___0B91BA14");
         });
 
         modelBuilder.Entity<Driver>(entity =>
         {
-            entity.HasKey(e => e.DriverId).HasName("PK__Driver__A411C5BD159F5794");
+            entity.HasKey(e => e.DriverId).HasName("PK__Driver__A411C5BD0E3540A9");
 
             entity.ToTable("Driver");
 
@@ -103,9 +239,9 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasIndex(e => e.Phone, "IDX_Driver_Phone");
 
-            entity.HasIndex(e => e.Phone, "UQ__Driver__B43B145F030DB23E").IsUnique();
+            entity.HasIndex(e => e.Phone, "UQ__Driver__B43B145FBF2A6780").IsUnique();
 
-            entity.HasIndex(e => e.LicenseNumber, "UQ__Driver__D482A0036DCD32C6").IsUnique();
+            entity.HasIndex(e => e.LicenseNumber, "UQ__Driver__D482A0033337F797").IsUnique();
 
             entity.Property(e => e.DriverId).HasColumnName("driver_id");
             entity.Property(e => e.CreatedAt)
@@ -141,7 +277,7 @@ public partial class BookingSystemContext : DbContext
 
         modelBuilder.Entity<OtpToken>(entity =>
         {
-            entity.HasKey(e => e.OtpId).HasName("PK__OtpToken__AEE35435ECDF3595");
+            entity.HasKey(e => e.OtpId).HasName("PK__OtpToken__AEE35435A9E4F66C");
 
             entity.ToTable("OtpToken");
 
@@ -192,53 +328,13 @@ public partial class BookingSystemContext : DbContext
                 .HasConstraintName("FK_OtpToken_User");
         });
 
-        modelBuilder.Entity<Payment>(entity =>
-        {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__ED1FC9EAEF0ADEBF");
-
-            entity.ToTable("Payment");
-
-            entity.HasIndex(e => e.BookingId, "IDX_Payment_Booking");
-
-            entity.HasIndex(e => e.Status, "IDX_Payment_Status");
-
-            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
-            entity.Property(e => e.Amount)
-                .HasColumnType("decimal(12, 2)")
-                .HasColumnName("amount");
-            entity.Property(e => e.BookingId).HasColumnName("booking_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.PaymentDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("payment_date");
-            entity.Property(e => e.PaymentMethod)
-                .HasMaxLength(30)
-                .HasColumnName("payment_method");
-            entity.Property(e => e.Status)
-                .HasMaxLength(20)
-                .HasDefaultValue("pending")
-                .HasColumnName("status");
-            entity.Property(e => e.UpdatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("updated_at");
-
-            entity.HasOne(d => d.Booking).WithMany(p => p.Payments)
-                .HasForeignKey(d => d.BookingId)
-                .HasConstraintName("FK__Payment__booking__1332DBDC");
-        });
-
         modelBuilder.Entity<Permission>(entity =>
         {
-            entity.HasKey(e => e.PermissionId).HasName("PK__Permissi__E5331AFA9DDF8831");
+            entity.HasKey(e => e.PermissionId).HasName("PK__Permissi__E5331AFA882F4E70");
 
             entity.ToTable("Permission");
 
-            entity.HasIndex(e => e.PermissionName, "UQ__Permissi__81C0F5A24C5EE7DF").IsUnique();
+            entity.HasIndex(e => e.PermissionName, "UQ__Permissi__81C0F5A202BF6CA2").IsUnique();
 
             entity.Property(e => e.PermissionId).HasColumnName("permission_id");
             entity.Property(e => e.Description)
@@ -252,7 +348,7 @@ public partial class BookingSystemContext : DbContext
 
         modelBuilder.Entity<Promotion>(entity =>
         {
-            entity.HasKey(e => e.PromotionId).HasName("PK__Promotio__2CB9556B7333D7DA");
+            entity.HasKey(e => e.PromotionId).HasName("PK__Promotio__2CB9556B86B71935");
 
             entity.ToTable("Promotion");
 
@@ -262,7 +358,7 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasIndex(e => new { e.StartDate, e.EndDate }, "IDX_Promotion_Date");
 
-            entity.HasIndex(e => e.PromoCode, "UQ__Promotio__C07E23151DCDDD25").IsUnique();
+            entity.HasIndex(e => e.PromoCode, "UQ__Promotio__C07E23155D784BC4").IsUnique();
 
             entity.Property(e => e.PromotionId).HasColumnName("promotion_id");
             entity.Property(e => e.CreatedAt)
@@ -304,7 +400,7 @@ public partial class BookingSystemContext : DbContext
 
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.HasKey(e => e.ReviewId).HasName("PK__Review__60883D9078F95C47");
+            entity.HasKey(e => e.ReviewId).HasName("PK__Review__60883D909439E41E");
 
             entity.ToTable("Review");
 
@@ -329,26 +425,26 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasOne(d => d.Driver).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.DriverId)
-                .HasConstraintName("FK__Review__driver_i__25518C17");
+                .HasConstraintName("FK__Review__driver_i__787EE5A0");
 
             entity.HasOne(d => d.Trip).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.TripId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Review__trip_id__245D67DE");
+                .HasConstraintName("FK__Review__trip_id__778AC167");
 
             entity.HasOne(d => d.User).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Review__user_id__236943A5");
+                .HasConstraintName("FK__Review__user_id__76969D2E");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CC8C71971D");
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CCF3F6F77E");
 
             entity.ToTable("Role");
 
-            entity.HasIndex(e => e.RoleName, "UQ__Role__783254B18A2B1B2B").IsUnique();
+            entity.HasIndex(e => e.RoleName, "UQ__Role__783254B11E752E27").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.CreatedAt)
@@ -368,13 +464,13 @@ public partial class BookingSystemContext : DbContext
                     "RolePermission",
                     r => r.HasOne<Permission>().WithMany()
                         .HasForeignKey("PermissionId")
-                        .HasConstraintName("FK__RolePermi__permi__5165187F"),
+                        .HasConstraintName("FK__RolePermi__permi__2C3393D0"),
                     l => l.HasOne<Role>().WithMany()
                         .HasForeignKey("RoleId")
-                        .HasConstraintName("FK__RolePermi__role___5070F446"),
+                        .HasConstraintName("FK__RolePermi__role___2B3F6F97"),
                     j =>
                     {
-                        j.HasKey("RoleId", "PermissionId").HasName("PK__RolePerm__C85A546309B1719C");
+                        j.HasKey("RoleId", "PermissionId").HasName("PK__RolePerm__C85A546364F8194F");
                         j.ToTable("RolePermission");
                         j.IndexerProperty<int>("RoleId").HasColumnName("role_id");
                         j.IndexerProperty<int>("PermissionId").HasColumnName("permission_id");
@@ -383,11 +479,11 @@ public partial class BookingSystemContext : DbContext
 
         modelBuilder.Entity<Route>(entity =>
         {
-            entity.HasKey(e => e.RouteId).HasName("PK__Route__28F706FEE55A00CC");
+            entity.HasKey(e => e.RouteId).HasName("PK__Route__28F706FEE1862998");
 
             entity.ToTable("Route");
 
-            entity.HasIndex(e => new { e.FromLocation, e.ToLocation }, "UQ__Route__4ABC8A7F18D9BB27").IsUnique();
+            entity.HasIndex(e => new { e.FromLocation, e.ToLocation }, "UQ__Route__4ABC8A7FD4B78AC4").IsUnique();
 
             entity.Property(e => e.RouteId).HasColumnName("route_id");
             entity.Property(e => e.CreatedAt)
@@ -409,11 +505,11 @@ public partial class BookingSystemContext : DbContext
 
         modelBuilder.Entity<Seat>(entity =>
         {
-            entity.HasKey(e => e.SeatId).HasName("PK__Seat__906DED9CCF04A25C");
+            entity.HasKey(e => e.SeatId).HasName("PK__Seat__906DED9CEFA8980D");
 
             entity.ToTable("Seat");
 
-            entity.HasIndex(e => new { e.VehicleId, e.SeatNumber }, "UQ__Seat__ED98C21B3EDB1B0B").IsUnique();
+            entity.HasIndex(e => new { e.VehicleId, e.SeatNumber }, "UQ__Seat__ED98C21B46E9B16C").IsUnique();
 
             entity.Property(e => e.SeatId).HasColumnName("seat_id");
             entity.Property(e => e.IsActive)
@@ -430,12 +526,12 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasOne(d => d.Vehicle).WithMany(p => p.Seats)
                 .HasForeignKey(d => d.VehicleId)
-                .HasConstraintName("FK__Seat__vehicle_id__693CA210");
+                .HasConstraintName("FK__Seat__vehicle_id__440B1D61");
         });
 
         modelBuilder.Entity<Ticket>(entity =>
         {
-            entity.HasKey(e => e.TicketId).HasName("PK__Ticket__D596F96BEFEFAD16");
+            entity.HasKey(e => e.TicketId).HasName("PK__Ticket__D596F96B9BAD8077");
 
             entity.ToTable("Ticket");
 
@@ -447,7 +543,7 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasIndex(e => new { e.TripId, e.SeatId }, "UQ_Ticket_Trip_Seat").IsUnique();
 
-            entity.HasIndex(e => e.TicketCode, "UQ__Ticket__628DB75FF9E1EDA8").IsUnique();
+            entity.HasIndex(e => e.TicketCode, "UQ__Ticket__628DB75FDC4F38C1").IsUnique();
 
             entity.Property(e => e.TicketId).HasColumnName("ticket_id");
             entity.Property(e => e.BookingId).HasColumnName("booking_id");
@@ -471,22 +567,22 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasOne(d => d.Booking).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.BookingId)
-                .HasConstraintName("FK__Ticket__booking___1AD3FDA4");
+                .HasConstraintName("FK__Ticket__booking___6E01572D");
 
             entity.HasOne(d => d.Seat).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.SeatId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Ticket__seat_id__1CBC4616");
+                .HasConstraintName("FK__Ticket__seat_id__6FE99F9F");
 
             entity.HasOne(d => d.Trip).WithMany(p => p.Tickets)
                 .HasForeignKey(d => d.TripId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Ticket__trip_id__1BC821DD");
+                .HasConstraintName("FK__Ticket__trip_id__6EF57B66");
         });
 
         modelBuilder.Entity<Trip>(entity =>
         {
-            entity.HasKey(e => e.TripId).HasName("PK__Trip__302A5D9E1B068738");
+            entity.HasKey(e => e.TripId).HasName("PK__Trip__302A5D9EB12F578C");
 
             entity.ToTable("Trip");
 
@@ -528,26 +624,26 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Trips)
                 .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK__Trip__created_by__7A672E12");
+                .HasConstraintName("FK__Trip__created_by__5535A963");
 
             entity.HasOne(d => d.Driver).WithMany(p => p.Trips)
                 .HasForeignKey(d => d.DriverId)
-                .HasConstraintName("FK__Trip__driver_id__797309D9");
+                .HasConstraintName("FK__Trip__driver_id__5441852A");
 
             entity.HasOne(d => d.Route).WithMany(p => p.Trips)
                 .HasForeignKey(d => d.RouteId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Trip__route_id__778AC167");
+                .HasConstraintName("FK__Trip__route_id__52593CB8");
 
             entity.HasOne(d => d.Vehicle).WithMany(p => p.Trips)
                 .HasForeignKey(d => d.VehicleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Trip__vehicle_id__787EE5A0");
+                .HasConstraintName("FK__Trip__vehicle_id__534D60F1");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__User__B9BE370FEB0E05F1");
+            entity.HasKey(e => e.UserId).HasName("PK__User__B9BE370F839CFDD7");
 
             entity.ToTable("User");
 
@@ -557,11 +653,11 @@ public partial class BookingSystemContext : DbContext
 
             entity.HasIndex(e => e.Username, "IDX_User_Username");
 
-            entity.HasIndex(e => e.Email, "UQ__User__AB6E61646BC12FF9").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__User__AB6E6164019B6D9A").IsUnique();
 
-            entity.HasIndex(e => e.Phone, "UQ__User__B43B145F6FA69491").IsUnique();
+            entity.HasIndex(e => e.Phone, "UQ__User__B43B145F55CB905D").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__User__F3DBC572F5442F14").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__User__F3DBC57201CBA34A").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Active)
@@ -594,16 +690,16 @@ public partial class BookingSystemContext : DbContext
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User__role_id__59FA5E80");
+                .HasConstraintName("FK__User__role_id__34C8D9D1");
         });
 
         modelBuilder.Entity<Vehicle>(entity =>
         {
-            entity.HasKey(e => e.VehicleId).HasName("PK__Vehicle__F2947BC176B4BD4B");
+            entity.HasKey(e => e.VehicleId).HasName("PK__Vehicle__F2947BC1442A7E7A");
 
             entity.ToTable("Vehicle");
 
-            entity.HasIndex(e => e.LicensePlate, "UQ__Vehicle__F72CD56ED582CD86").IsUnique();
+            entity.HasIndex(e => e.LicensePlate, "UQ__Vehicle__F72CD56E4B1651F8").IsUnique();
 
             entity.Property(e => e.VehicleId).HasColumnName("vehicle_id");
             entity.Property(e => e.CreatedAt)
