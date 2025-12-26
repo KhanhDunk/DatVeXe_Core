@@ -1,12 +1,11 @@
 ﻿using System;
-using Helper.Enums;
 
 namespace Models.DTO
 {
     public class ResponseDTO<T>
     {
         public bool Success { get; set; }
-        public ResponseCode Code { get; set; }
+        public ResponseCode Code { get; set; } = ResponseCode.Success;
         public string Message { get; set; }
         public T? Data { get; set; }
 

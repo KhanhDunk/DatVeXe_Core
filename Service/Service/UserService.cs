@@ -3,14 +3,12 @@ using Models.DTO;
 using Models.Models;
 using Service.Interface;
 using Service.Utility;
-using Helper.Enums;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
-
 
 namespace Service.Service
 {
@@ -40,7 +38,7 @@ namespace Service.Service
         public void create(User user)
         {
             // Lấy role mặc định "User" từ database
-            var defaultRole = _context.Roles.FirstOrDefault(r => r.RoleName == "Users");
+            var defaultRole = _context.Roles.FirstOrDefault(r => r.RoleName == "User");
             if (defaultRole == null)
             {
                 throw new Exception("Role 'User' không tồn tại trong database.");
