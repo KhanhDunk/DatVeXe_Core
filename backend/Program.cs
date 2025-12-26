@@ -15,6 +15,7 @@ using System.Security.Claims;
 using System.Threading.RateLimiting;
 using System.Text;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // JWT config
@@ -32,9 +33,8 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
-builder.Services.AddDbContext<BookingSystemContext>(options =>
+builder.Services.AddDbContextPool<BookingSystemContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 
 // Controllers
@@ -78,26 +78,72 @@ builder.Services.AddHostedService<QueuedEmailSender>();
 // Rate limiter
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("register_limit", opt =>
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // Đăng ký rate limit nếu request vượt quá limit trả về HTTP 429 Too Many Requests 
+
+    options.OnRejected = async (context, token) =>
     {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 5;
-        opt.QueueLimit = 0;
+        context.HttpContext.Response.ContentType = "application/json";
+
+        var response = new
+        {
+            success = false,
+            code = "429",
+            message = "Bạn thao tác quá nhanh. Vui lòng thử lại sau."
+        };
+
+        await context.HttpContext.Response.WriteAsJsonAsync(response, token);
+    };
+
+    // -------- REGISTER (limit theo IP) --------
+    options.AddPolicy("register_limit", context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown_ip"; // Lấy IP của client
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new FixedWindowRateLimiterOptions //FixedWindowRateLimiter  giới hạn x request trong y phút 
+            {
+                PermitLimit = 5,// Tối đa 5 request 
+                Window = TimeSpan.FromMinutes(1), // Trong vòng 1 phút 
+                QueueLimit = 0
+            });
     });
 
-    options.AddTokenBucketLimiter("forgot_password_limit", opt =>
+    // -------- LOGIN (limit theo IP) --------
+    options.AddPolicy("login_limit", context =>
     {
-        opt.TokenLimit = 1;
-        opt.TokensPerPeriod = 1;
-        opt.ReplenishmentPeriod = TimeSpan.FromMinutes(1);
-        opt.AutoReplenishment = true;
-        opt.QueueLimit = 1;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown_ip";
+
+        return RateLimitPartition.GetTokenBucketLimiter(
+            partitionKey: ip,
+            factory: _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 10, // Tối đa 10 lần 
+                TokensPerPeriod = 10, // Hồi 10 token 
+                ReplenishmentPeriod = TimeSpan.FromMinutes(1), // Mỗi 1 phút 
+                AutoReplenishment = true, // Tự hồi token 
+                QueueLimit = 0 // Không chờ 
+            });
+    });
+
+    // -------- FORGOT PASSWORD --------
+    options.AddPolicy("forgot_password_limit", context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown_ip";
+
+        return RateLimitPartition.GetTokenBucketLimiter(
+            partitionKey: ip,
+            factory: _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 1,
+                TokensPerPeriod = 1,
+                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                AutoReplenishment = true,
+                QueueLimit = 0
+            });
     });
 });
-
-
-
 
 // --- Swagger ---
 builder.Services.AddSwaggerGen(c =>
@@ -105,28 +151,35 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Đặt vé xe API",
-        Version = "v1",
-        Description = "API quản lý đặt vé xe với "
+        Version = "v1"
     });
 
-    var securityScheme = new OpenApiSecurityScheme
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Nhập JWT token dạng: Bearer {token}"
-    };
-
-    c.AddSecurityDefinition("Bearer", securityScheme);
+        Description = "Nhập JWT token (chỉ dán token, không cần Bearer)"
+    });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        { securityScheme, new string[] { } }
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
-
 });
+
 
 
 
@@ -136,7 +189,10 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins("http://localhost:4200")
+                .WithOrigins(
+                "http://localhost:4200",
+                "http://localhost:4300"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
@@ -162,9 +218,9 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 app.UseCors("AllowAngular");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseRateLimiter();// Giới hạn spam 
 
 app.Run();

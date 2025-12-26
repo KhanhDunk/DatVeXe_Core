@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Models.DTO;
 using Service.Interface;
-using Helper.Enums;
 using System.Threading.Tasks;
 
 namespace backend.Controllers

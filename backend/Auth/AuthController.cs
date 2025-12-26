@@ -10,7 +10,6 @@ using Service.Interface;
 using Service.Service;
 using Service.Utility;
 using UtilityHelper = Service.Utility.Helper;
-using Helper.Enums;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -38,6 +37,7 @@ namespace backend.Auth
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("login_limit")]
         public ActionResult<ResponseDTO<string>> Login([FromBody] LoginDTO login)
         {
             try
@@ -102,6 +102,7 @@ namespace backend.Auth
         }
 
         [HttpPost("register")]
+        [EnableRateLimiting("register_limit")]
         public ActionResult<ResponseDTO<object>> Register([FromBody] RegisterDTO dto)
         {
             if (!ModelState.IsValid)
