@@ -100,7 +100,7 @@ namespace backend.Auth
                 });
             }
         }
-
+        
         [HttpPost("register")]
         [EnableRateLimiting("register_limit")]
         public ActionResult<ResponseDTO<object>> Register([FromBody] RegisterDTO dto)
