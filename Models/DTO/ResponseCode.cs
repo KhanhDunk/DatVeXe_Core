@@ -1,4 +1,4 @@
-namespace Helper.Enums
+namespace Models.DTO
 {
     public enum ResponseCode
     {
