@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Models.DTO;
 using Models.Models;
 using Service.Interface;
-using Service.Utility;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -15,10 +15,12 @@ namespace Service.Service
     public class UserService : IUserService
     {
         private readonly BookingSystemContext _context;
+        private readonly IPasswordHasher<User> _passwordHasher;
 
-        public UserService(BookingSystemContext context)
+        public UserService(BookingSystemContext context, IPasswordHasher<User> passwordHasher)
         {
             _context = context;
+            _passwordHasher = passwordHasher;
         }
 
 
@@ -116,7 +118,7 @@ namespace Service.Service
             }
         }
 
-        public async Task<ResponseDTO<UserDTO>> CreateUserAsync(RegisterDTO dto)
+        public async Task<ResponseDTO<UserDTO>> CreateUserAsync(AdminCreateUserDTO dto)
         {
             if (dto == null)
             {
@@ -139,13 +141,13 @@ namespace Service.Service
                     return new ResponseDTO<UserDTO>(false, "Username, Email hoặc Phone đã tồn tại", null, ResponseCode.UserExists);
                 }
 
-                var defaultRole = await _context.Roles
+                var targetRole = await _context.Roles
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.RoleName == "User");
+                    .FirstOrDefaultAsync(r => r.RoleId == dto.RoleId);
 
-                if (defaultRole == null)
+                if (targetRole == null)
                 {
-                    return new ResponseDTO<UserDTO>(false, "Không tìm thấy role mặc định", null, ResponseCode.InvalidData);
+                    return new ResponseDTO<UserDTO>(false, "Role không tồn tại", null, ResponseCode.InvalidData);
                 }
 
                 var now = DateTime.UtcNow;
@@ -155,12 +157,14 @@ namespace Service.Service
                     Username = normalizedUsername,
                     Email = normalizedEmail,
                     Phone = normalizedPhone,
-                    Password = PasswordHelper.HashPassword(dto.Password),
-                    RoleId = defaultRole.RoleId,
+                    Password = string.Empty, // placeholder before hashing
+                    RoleId = targetRole.RoleId,
                     Active = true,
                     CreatedAt = now,
                     UpdatedAt = now
                 };
+
+                user.Password = _passwordHasher.HashPassword(user, dto.Password);
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();

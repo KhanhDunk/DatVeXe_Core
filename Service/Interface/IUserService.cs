@@ -11,7 +11,7 @@ namespace Service.Interface
         void create(User user);
 
         Task<ResponseDTO<PagedResult<UserDTO>>> GetUsersAsync(UserQueryParameters parameters);
-        Task<ResponseDTO<UserDTO>> CreateUserAsync(RegisterDTO dto);
+        Task<ResponseDTO<UserDTO>> CreateUserAsync(AdminCreateUserDTO dto);
         Task<ResponseDTO<UserDTO>> UpdateUserAsync(UpdateUserDTO dto);
         Task<ResponseDTO<bool>> UpdateUserStatusAsync(UserStatusUpdateDTO dto);
 
