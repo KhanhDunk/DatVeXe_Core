@@ -60,9 +60,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IStaticPageService, StaticPageService>();
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 
 builder.Services.Configure<EmailSetting>(

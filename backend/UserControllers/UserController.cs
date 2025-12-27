@@ -38,7 +38,7 @@ namespace backend.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ResponseDTO<UserDTO>>> CreateUser([FromBody] RegisterDTO request)
+        public async Task<ActionResult<ResponseDTO<UserDTO>>> CreateUser([FromBody] AdminCreateUserDTO request)
         {
             if (request == null || !ModelState.IsValid)
             {

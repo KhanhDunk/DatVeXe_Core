@@ -37,6 +37,8 @@ public partial class BookingSystemContext : DbContext
 
     public virtual DbSet<Seat> Seats { get; set; }
 
+    public virtual DbSet<StaticPage> StaticPages { get; set; }
+
     public virtual DbSet<Ticket> Tickets { get; set; }
 
     public virtual DbSet<Trip> Trips { get; set; }
@@ -527,6 +529,47 @@ public partial class BookingSystemContext : DbContext
             entity.HasOne(d => d.Vehicle).WithMany(p => p.Seats)
                 .HasForeignKey(d => d.VehicleId)
                 .HasConstraintName("FK__Seat__vehicle_id__440B1D61");
+        });
+
+        modelBuilder.Entity<StaticPage>(entity =>
+        {
+            entity.HasKey(e => e.PageId).HasName("PK__StaticPa__637F305A0BA51BD7");
+
+            entity.ToTable("StaticPage");
+
+            entity.HasIndex(e => e.Slug, "IDX_StaticPage_Slug");
+
+            entity.HasIndex(e => e.Slug, "UQ__StaticPa__32DD1E4CC40AA749").IsUnique();
+
+            entity.Property(e => e.PageId).HasColumnName("page_id");
+            entity.Property(e => e.Content)
+                .IsRequired()
+                .HasColumnName("content");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Slug)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasColumnName("slug");
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasColumnName("title");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.StaticPages)
+                .HasForeignKey(d => d.UpdatedBy)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_StaticPage_User");
         });
 
         modelBuilder.Entity<Ticket>(entity =>

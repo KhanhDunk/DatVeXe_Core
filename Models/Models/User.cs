@@ -37,5 +37,7 @@ public partial class User
 
     public virtual Role Role { get; set; }
 
+    public virtual ICollection<StaticPage> StaticPages { get; set; } = new List<StaticPage>();
+
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
 }

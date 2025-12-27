@@ -5,6 +5,8 @@ namespace Models.DTO
         Success = 200,
         InvalidData = 400,
         UserExists = 401,
+        Forbidden = 403,
+        NotFound = 404,
         ServerError = 500
     }
 }

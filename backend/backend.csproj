@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\**" />
+    <Content Remove="Models\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <None Remove="Models\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="backend.Tests\backend.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Auth & Security -->
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.2" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
@@ -25,6 +36,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Models\Models.csproj" />
     <ProjectReference Include="..\Service\Service.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="backend.Tests\**\*.cs" />
+    <Content Remove="backend.Tests\**\*" />
+    <EmbeddedResource Remove="backend.Tests\**\*" />
+    <None Remove="backend.Tests\**\*" />
   </ItemGroup>
 
 </Project>
